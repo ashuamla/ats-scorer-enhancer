@@ -62,6 +62,12 @@ docker build -t ats-scorer .
 docker run -p 8080:8080 ats-scorer
 ```
 
+## Logging
+
+- Requests are logged with method, path, status, and duration. Each response includes an `X-Request-Id` header that can be used to correlate it with application logs.
+- Logs never include uploaded resume contents, job descriptions, or uploaded filenames. Unexpected failures are recorded in server logs while clients receive a generic error message.
+- Local runs use readable console logs. Docker and the `prod` Spring profile emit structured JSON logs to standard output; Compose rotates container logs at 10 MB per file and keeps five files. Use `docker compose logs -f ats-scorer` to view them. Set `SPRING_PROFILES_ACTIVE` to override the Compose default.
+
 ## API Endpoints
 
 ### Score Resume

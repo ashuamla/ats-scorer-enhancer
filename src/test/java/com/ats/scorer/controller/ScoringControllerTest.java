@@ -283,7 +283,7 @@ class ScoringControllerTest {
                             .file(resumeFile)
                             .param("jobDescription", sampleJd))
                     .andExpect(status().isInternalServerError())
-                    .andExpect(jsonPath("$.error").exists());
+                    .andExpect(jsonPath("$.error").value("An unexpected error occurred. Please try again later."));
         }
     }
 
@@ -298,7 +298,16 @@ class ScoringControllerTest {
             mockMvc.perform(get("/api/health"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("UP"))
-                    .andExpect(jsonPath("$.service").value("ATS Scorer API"));
+                    .andExpect(jsonPath("$.service").value("ATS Scorer API"))
+                    .andExpect(result -> assertTrue(result.getResponse().getHeader("X-Request-Id")
+                            .matches("[0-9a-fA-F-]{36}")));
+        }
+
+        @Test
+        @DisplayName("Should return 404 for a missing favicon")
+        void missingFavicon_returnsNotFound() throws Exception {
+            mockMvc.perform(get("/favicon.ico"))
+                    .andExpect(status().isNotFound());
         }
     }
 }
