@@ -6,6 +6,8 @@ import com.ats.scorer.dto.TailoredResumeResponse;
 import com.ats.scorer.service.AtsScoringService;
 import com.ats.scorer.service.ResumeParserService;
 import com.ats.scorer.service.ResumeTailoringService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +18,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 public class ScoringController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ScoringController.class);
 
     private final AtsScoringService atsScoringService;
     private final ResumeParserService resumeParserService;
@@ -62,12 +66,14 @@ public class ScoringController {
             return ResponseEntity.ok(scoreResponse);
 
         } catch (IOException e) {
+            logger.warn("Resume parsing failed during scoring (fileSizeBytes={})", resume.getSize(), e);
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Failed to process the uploaded file: " + e.getMessage()
+                    "error", "Failed to process the uploaded file. Please verify the file and try again."
             ));
         } catch (Exception e) {
+            logger.error("Resume scoring failed (fileSizeBytes={})", resume.getSize(), e);
             return ResponseEntity.internalServerError().body(Map.of(
-                    "error", "An unexpected error occurred: " + e.getMessage()
+                    "error", "An unexpected error occurred. Please try again later."
             ));
         }
     }
@@ -107,12 +113,14 @@ public class ScoringController {
             return ResponseEntity.ok(tailoredResponse);
 
         } catch (IOException e) {
+            logger.warn("Resume parsing failed during tailoring (fileSizeBytes={})", resume.getSize(), e);
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Failed to process the uploaded file: " + e.getMessage()
+                    "error", "Failed to process the uploaded file. Please verify the file and try again."
             ));
         } catch (Exception e) {
+            logger.error("Resume tailoring failed (fileSizeBytes={})", resume.getSize(), e);
             return ResponseEntity.internalServerError().body(Map.of(
-                    "error", "An unexpected error occurred: " + e.getMessage()
+                    "error", "An unexpected error occurred. Please try again later."
             ));
         }
     }
