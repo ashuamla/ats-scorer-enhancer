@@ -1,6 +1,8 @@
-# ATS Resume Scorer
+# ATS Scorer Enhancer
 
 A web-based **Applicant Tracking System (ATS) Scorer** built with Spring Boot that evaluates how well a resume matches a job description using keyword-based analysis.
+
+This project checks how well a resume matches a job description and can tailor it for the role.
 
 ## Features
 
