@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Scorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8eeff;
+        }
+
+        .upload-area.has-file {
+            border-color: #4caf50;
+            background: #f0fff0;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .upload-text strong {
+            color: #667eea;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .score-circle .score {
+            font-size: 3em;
+        }
+
+        .score-circle .grade {
+            font-size: 1.5em;
+        }
+
+        .score-excellent { background: linear-gradient(135deg, #4caf50, #45a049); }
+        .score-good { background: linear-gradient(135deg, #8bc34a, #7cb342); }
+        .score-average { background: linear-gradient(135deg, #ffc107, #ffb300); }
+        .score-poor { background: linear-gradient(135deg, #ff9800, #fb8c00); }
+        .score-bad { background: linear-gradient(135deg, #f44336, #e53935); }
+
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .score-item .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .score-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .keywords-section {
+            margin-top: 20px;
+        }
+
+        .keywords-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .keyword-tag {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .keyword-matched {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .keyword-missing {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .suggestions {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .suggestions h3 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .suggestions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .suggestions li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ffe0b2;
+            color: #5d4037;
+        }
+
+        .suggestions li:last-child {
+            border-bottom: none;
+        }
+
+        .suggestions li::before {
+            content: "💡 ";
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        #resumeInput {
+            display: none;
+        }
+
+        /* Tab navigation */
+        .tab-nav {
+            display: flex;
+            gap: 0;
+            margin-bottom: 0;
+            background: white;
+            border-radius: 16px 16px 0 0;
+            overflow: hidden;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: #e8eeff;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Tailored resume result styles */
+        .tailored-result {
+            display: none;
+        }
+
+        .tailored-result.show {
+            display: block;
+        }
+
+        .relevance-score {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .relevance-score .score-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .relevance-score .score-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .section-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .section-tag {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .section-included {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .section-excluded {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .tailored-text {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .copy-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd6;
+        }
+
+        .highlighted-keywords-section {
+            margin-top: 20px;
+        }
+
+        .highlighted-keywords-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 ATS Resume Scorer</h1>
+            <p>Upload your resume and paste a job description to score or tailor your resume</p>
+        </div>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" id="tabScore" onclick="switchTab('score')">🔍 Score Resume</button>
+            <button class="tab-btn" id="tabTailor" onclick="switchTab('tailor')">✨ Tailor Resume</button>
+        </div>
+
+        <!-- SCORE TAB PANEL -->
+        <div class="tab-panel active" id="panelScore">
+            <div class="card">
+                <h2>📤 Upload Your Resume</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Click to upload</strong> or drag and drop<br>
+                        PDF, DOCX, or TXT (max 10MB)
+                    </div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+                <input type="file" id="resumeInput" accept=".pdf,.docx,.txt">
+            </div>
+
+            <div class="card">
+                <h2>📋 Job Description</h2>
+                <textarea id="jobDescription" placeholder="Paste the job description here..."></textarea>
+            </div>
+
+            <button class="btn" id="scoreBtn" onclick="scoreResume()">🔍 Score My Resume</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your resume...</p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="card results" id="results">
+                <h2>📊 Scoring Results</h2>
+                <div class="score-circle" id="scoreCircle">
+                    <div class="score" id="overallScore">0</div>
+                    <div class="grade" id="grade">-</div>
+                </div>
+
+                <div class="score-breakdown">
+                    <div class="score-item">
+                        <div class="label">Keywords</div>
+                        <div class="value" id="keywordScore">0%</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="label">Sections</div>
+                        <div class="value" id="sectionScore">0%</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="label">Experience</div>
+                        <div class="value" id="experienceScore">0%</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="label">Formatting</div>
+                        <div class="value" id="formatScore">0%</div>
+                    </div>
+                </div>
+
+                <div class="keywords-section">
+                    <h3>✅ Matched Keywords</h3>
+                    <div class="keyword-tags" id="matchedKeywords"></div>
+
+                    <h3>❌ Missing Keywords</h3>
+                    <div class="keyword-tags" id="missingKeywords"></div>
+                </div>
+
+                <div class="suggestions" id="suggestions">
+                    <h3>💡 Suggestions</h3>
+                    <ul id="suggestionsList"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAILOR TAB PANEL -->
+        <div class="tab-panel" id="panelTailor">
+            <div class="card">
+                <h2>📤 Upload Your Resume</h2>
+                <div class="upload-area" id="uploadAreaTailor">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Click to upload</strong> or drag and drop<br>
+                        PDF, DOCX, or TXT (max 10MB)
+                    </div>
+                    <div class="file-name" id="fileNameTailor"></div>
+                </div>
+                <input type="file" id="resumeInputTailor" accept=".pdf,.docx,.txt" style="display:none;">
+            </div>
+
+            <div class="card">
+                <h2>📋 Job Description</h2>
+                <textarea id="jobDescriptionTailor" placeholder="Paste the job description here to tailor your resume..."></textarea>
+            </div>
+
+            <button class="btn" id="tailorBtn" onclick="tailorResume()">✨ Tailor My Resume</button>
+
+            <div class="loading" id="loadingTailor">
+                <div class="spinner"></div>
+                <p>Tailoring your resume...</p>
+            </div>
+
+            <div class="error-message" id="errorMessageTailor"></div>
+
+            <div class="card tailored-result" id="tailoredResult">
+                <h2>✨ Tailored Resume</h2>
+
+                <div class="relevance-score">
+                    <div class="score-label">Relevance Score</div>
+                    <div class="score-value" id="relevanceScore">0%</div>
+                </div>
+
+                <div class="keywords-section">
+                    <h3>📂 Included Sections</h3>
+                    <div class="section-list" id="includedSections"></div>
+
+                    <h3>🚫 Excluded Sections</h3>
+                    <div class="section-list" id="excludedSections"></div>
+                </div>
+
+                <div class="highlighted-keywords-section">
+                    <h3>🔑 Highlighted Keywords</h3>
+                    <div class="keyword-tags" id="highlightedKeywords"></div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h3>📝 Tailored Resume Text</h3>
+                    <div class="tailored-text" id="tailoredText"></div>
+                    <button class="copy-btn" id="copyBtn" onclick="copyTailoredResume()">📋 Copy to Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+
+            if (tab === 'score') {
+                document.getElementById('tabScore').classList.add('active');
+                document.getElementById('panelScore').classList.add('active');
+            } else {
+                document.getElementById('tabTailor').classList.add('active');
+                document.getElementById('panelTailor').classList.add('active');
+            }
+        }
+
+        // === SCORE TAB ===
+        const uploadArea = document.getElementById('uploadArea');
+        const resumeInput = document.getElementById('resumeInput');
+        const fileName = document.getElementById('fileName');
+        const jobDescription = document.getElementById('jobDescription');
+        const scoreBtn = document.getElementById('scoreBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const results = document.getElementById('results');
+
+        let selectedFile = null;
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => resumeInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input change
+        resumeInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            const validExtensions = ['.pdf', '.docx', '.txt'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!validExtensions.includes(fileExt)) {
+                showError('Please upload a PDF, DOCX, or TXT file.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = '📎 ' + file.name;
+            uploadArea.classList.add('has-file');
+            hideError();
+        }
+
+        async function scoreResume() {
+            // Validate
+            if (!selectedFile) {
+                showError('Please upload your resume first.');
+                return;
+            }
+
+            if (!jobDescription.value.trim()) {
+                showError('Please paste a job description.');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('show');
+            results.classList.remove('show');
+            hideError();
+            scoreBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('resume', selectedFile);
+                formData.append('jobDescription', jobDescription.value.trim());
+
+                const response = await fetch('/api/score', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to score resume');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('show');
+                scoreBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Overall score
+            const overallScore = Math.round(data.overallScore);
+            document.getElementById('overallScore').textContent = overallScore + '%';
+            document.getElementById('grade').textContent = data.grade;
+
+            // Score circle color
+            const scoreCircle = document.getElementById('scoreCircle');
+            scoreCircle.className = 'score-circle';
+            if (overallScore >= 80) scoreCircle.classList.add('score-excellent');
+            else if (overallScore >= 70) scoreCircle.classList.add('score-good');
+            else if (overallScore >= 60) scoreCircle.classList.add('score-average');
+            else if (overallScore >= 50) scoreCircle.classList.add('score-poor');
+            else scoreCircle.classList.add('score-bad');
+
+            // Breakdown scores
+            document.getElementById('keywordScore').textContent = Math.round(data.keywordScore) + '%';
+            document.getElementById('sectionScore').textContent = Math.round(data.sectionScore) + '%';
+            document.getElementById('experienceScore').textContent = Math.round(data.experienceScore) + '%';
+            document.getElementById('formatScore').textContent = Math.round(data.formatScore) + '%';
+
+            // Matched keywords
+            const matchedContainer = document.getElementById('matchedKeywords');
+            matchedContainer.innerHTML = '';
+            if (data.matchedKeywords && data.matchedKeywords.length > 0) {
+                data.matchedKeywords.forEach(keyword => {
+                    const tag = document.createElement('span');
+                    tag.className = 'keyword-tag keyword-matched';
+                    tag.textContent = keyword;
+                    matchedContainer.appendChild(tag);
+                });
+            } else {
+                matchedContainer.innerHTML = '<span style="color: #999;">No keywords matched</span>';
+            }
+
+            // Missing keywords
+            const missingContainer = document.getElementById('missingKeywords');
+            missingContainer.innerHTML = '';
+            if (data.missingKeywords && data.missingKeywords.length > 0) {
+                data.missingKeywords.forEach(keyword => {
+                    const tag = document.createElement('span');
+                    tag.className = 'keyword-tag keyword-missing';
+                    tag.textContent = keyword;
+                    missingContainer.appendChild(tag);
+                });
+            } else {
+                missingContainer.innerHTML = '<span style="color: #999;">No missing keywords — great job!</span>';
+            }
+
+            // Suggestions
+            const suggestionsList = document.getElementById('suggestionsList');
+            suggestionsList.innerHTML = '';
+            if (data.suggestions && data.suggestions.length > 0) {
+                data.suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion;
+                    suggestionsList.appendChild(li);
+                });
+            } else {
+                suggestionsList.innerHTML = '<li>Your resume looks great! No major improvements needed.</li>';
+            }
+
+            // Show results
+            results.classList.add('show');
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showError(message) {
+            errorMessage.textContent = '⚠️ ' + message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        // === TAILOR TAB ===
+        const uploadAreaTailor = document.getElementById('uploadAreaTailor');
+        const resumeInputTailor = document.getElementById('resumeInputTailor');
+        const fileNameTailor = document.getElementById('fileNameTailor');
+        const jobDescriptionTailor = document.getElementById('jobDescriptionTailor');
+        const tailorBtn = document.getElementById('tailorBtn');
+        const loadingTailor = document.getElementById('loadingTailor');
+        const errorMessageTailor = document.getElementById('errorMessageTailor');
+        const tailoredResult = document.getElementById('tailoredResult');
+
+        let selectedFileTailor = null;
+
+        // Upload area click
+        uploadAreaTailor.addEventListener('click', () => resumeInputTailor.click());
+
+        // Drag and drop
+        uploadAreaTailor.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadAreaTailor.classList.add('dragover');
+        });
+
+        uploadAreaTailor.addEventListener('dragleave', () => {
+            uploadAreaTailor.classList.remove('dragover');
+        });
+
+        uploadAreaTailor.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadAreaTailor.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileTailor(files[0]);
+            }
+        });
+
+        // File input change
+        resumeInputTailor.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileTailor(e.target.files[0]);
+            }
+        });
+
+        function handleFileTailor(file) {
+            const validExtensions = ['.pdf', '.docx', '.txt'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!validExtensions.includes(fileExt)) {
+                showErrorTailor('Please upload a PDF, DOCX, or TXT file.');
+                return;
+            }
+
+            selectedFileTailor = file;
+            fileNameTailor.textContent = '📎 ' + file.name;
+            uploadAreaTailor.classList.add('has-file');
+            hideErrorTailor();
+        }
+
+        async function tailorResume() {
+            // Validate
+            if (!selectedFileTailor) {
+                showErrorTailor('Please upload your resume first.');
+                return;
+            }
+
+            if (!jobDescriptionTailor.value.trim()) {
+                showErrorTailor('Please paste a job description.');
+                return;
+            }
+
+            // Show loading
+            loadingTailor.classList.add('show');
+            tailoredResult.classList.remove('show');
+            hideErrorTailor();
+            tailorBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('resume', selectedFileTailor);
+                formData.append('jobDescription', jobDescriptionTailor.value.trim());
+
+                const response = await fetch('/api/tailor', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to tailor resume');
+                }
+
+                displayTailoredResult(data);
+
+            } catch (error) {
+                showErrorTailor(error.message);
+            } finally {
+                loadingTailor.classList.remove('show');
+                tailorBtn.disabled = false;
+            }
+        }
+
+        function displayTailoredResult(data) {
+            // Relevance score
+            document.getElementById('relevanceScore').textContent = Math.round(data.relevanceScore) + '%';
+
+            // Included sections
+            const includedContainer = document.getElementById('includedSections');
+            includedContainer.innerHTML = '';
+            if (data.includedSections && data.includedSections.length > 0) {
+                data.includedSections.forEach(section => {
+                    const tag = document.createElement('span');
+                    tag.className = 'section-tag section-included';
+                    tag.textContent = section.charAt(0).toUpperCase() + section.slice(1);
+                    includedContainer.appendChild(tag);
+                });
+            } else {
+                includedContainer.innerHTML = '<span style="color: #999;">No sections included</span>';
+            }
+
+            // Excluded sections
+            const excludedContainer = document.getElementById('excludedSections');
+            excludedContainer.innerHTML = '';
+            if (data.excludedSections && data.excludedSections.length > 0) {
+                data.excludedSections.forEach(section => {
+                    const tag = document.createElement('span');
+                    tag.className = 'section-tag section-excluded';
+                    tag.textContent = section.charAt(0).toUpperCase() + section.slice(1);
+                    excludedContainer.appendChild(tag);
+                });
+            } else {
+                excludedContainer.innerHTML = '<span style="color: #999;">All sections are relevant — great fit!</span>';
+            }
+
+            // Highlighted keywords
+            const highlightedContainer = document.getElementById('highlightedKeywords');
+            highlightedContainer.innerHTML = '';
+            if (data.highlightedKeywords && data.highlightedKeywords.length > 0) {
+                data.highlightedKeywords.forEach(keyword => {
+                    const tag = document.createElement('span');
+                    tag.className = 'keyword-tag keyword-matched';
+                    tag.textContent = keyword;
+                    highlightedContainer.appendChild(tag);
+                });
+            } else {
+                highlightedContainer.innerHTML = '<span style="color: #999;">No keywords highlighted</span>';
+            }
+
+            // Tailored resume text
+            document.getElementById('tailoredText').textContent = data.tailoredResumeText || 'No tailored text generated.';
+
+            // Show results
+            tailoredResult.classList.add('show');
+            tailoredResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function copyTailoredResume() {
+            const text = document.getElementById('tailoredText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy to Clipboard';
+                }, 2000);
+            });
+        }
+
+        function showErrorTailor(message) {
+            errorMessageTailor.textContent = '⚠️ ' + message;
+            errorMessageTailor.classList.add('show');
+        }
+
+        function hideErrorTailor() {
+            errorMessageTailor.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
