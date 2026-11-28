@@ -75,6 +75,61 @@ class AtsScoringServiceTest {
     }
 
     @Nested
+    @DisplayName("AI scoring and fallback")
+    class AiScoringTests {
+
+        @Test
+        @DisplayName("Identifies the local rule-based scoring mode when AI is not configured")
+        void score_withoutAiProvider_marksRuleBasedMode() {
+            ScoreResponse response = service.score(fullResume, relevantJd);
+
+            assertEquals("RULE_BASED", response.getAnalysisMethod());
+            assertTrue(response.getAnalysisSummary().contains("rule-based"));
+        }
+
+        @Test
+        @DisplayName("Normalizes AI scores and ensures structured fields are present")
+        void score_withAiProvider_normalizesResponse() {
+            ScoreResponse aiResponse = new ScoreResponse();
+            aiResponse.setKeywordScore(120.0);
+            aiResponse.setSectionScore(-10.0);
+            aiResponse.setExperienceScore(75.0);
+            aiResponse.setFormatScore(Double.NaN);
+            aiResponse.setAnalysisSummary("Semantic evidence was found.");
+            AtsScoringService aiService = new AtsScoringService((resume, jobDescription) -> {
+                assertEquals(fullResume, resume);
+                assertEquals(relevantJd, jobDescription);
+                return aiResponse;
+            });
+
+            ScoreResponse response = aiService.score(fullResume, relevantJd);
+
+            assertEquals("AI", response.getAnalysisMethod());
+            assertEquals(100.0, response.getKeywordScore());
+            assertEquals(0.0, response.getSectionScore());
+            assertEquals(75.0, response.getExperienceScore());
+            assertEquals(0.0, response.getFormatScore());
+            assertNotNull(response.getMatchedKeywords());
+            assertNotNull(response.getMissingKeywords());
+            assertNotNull(response.getSuggestions());
+            assertEquals("Semantic evidence was found.", response.getAnalysisSummary());
+        }
+
+        @Test
+        @DisplayName("Falls back to rule-based scoring when the AI provider fails")
+        void score_whenAiProviderFails_fallsBackToRules() {
+            AtsScoringService aiService = new AtsScoringService((resume, jobDescription) -> {
+                throw new IllegalStateException("Provider unavailable");
+            });
+
+            ScoreResponse response = aiService.score(fullResume, relevantJd);
+
+            assertEquals("RULE_BASED", response.getAnalysisMethod());
+            assertTrue(response.getAnalysisSummary().contains("rule-based"));
+        }
+    }
+
+    @Nested
     @DisplayName("score() - Full workflow tests")
     class ScoreWorkflowTests {
 

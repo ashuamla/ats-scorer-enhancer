@@ -1,6 +1,10 @@
 package com.ats.scorer.service;
 
 import com.ats.scorer.dto.ScoreResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +15,23 @@ import java.util.stream.Collectors;
 
 @Service
 public class AtsScoringService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AtsScoringService.class);
+
+    private final ResumeAnalysisProvider resumeAnalysisProvider;
+
+    public AtsScoringService() {
+        this.resumeAnalysisProvider = null;
+    }
+
+    @Autowired
+    public AtsScoringService(ObjectProvider<ResumeAnalysisProvider> resumeAnalysisProvider) {
+        this.resumeAnalysisProvider = resumeAnalysisProvider.getIfAvailable();
+    }
+
+    AtsScoringService(ResumeAnalysisProvider resumeAnalysisProvider) {
+        this.resumeAnalysisProvider = resumeAnalysisProvider;
+    }
 
     @Value("${ats.scoring.keyword-weight:0.4}")
     private double keywordWeight;
@@ -63,6 +84,15 @@ public class AtsScoringService {
     );
 
     public ScoreResponse score(String resumeText, String jobDescription) {
+        if (resumeAnalysisProvider != null) {
+            try {
+                return normalizeAiResponse(resumeAnalysisProvider.analyze(resumeText, jobDescription));
+            } catch (RuntimeException exception) {
+                logger.warn("AI resume analysis failed; using rule-based scoring (failureType={})",
+                        exception.toString());
+            }
+        }
+
         ScoreResponse response = new ScoreResponse();
 
         // Normalize texts
@@ -114,8 +144,47 @@ public class AtsScoringService {
         response.setMissingKeywords(missing);
         response.setSuggestions(suggestions);
         response.setGrade(grade);
+        response.setAnalysisMethod("RULE_BASED");
+        response.setAnalysisSummary("This report uses local rule-based text matching because AI analysis is not enabled or available.");
 
         return response;
+    }
+
+    private ScoreResponse normalizeAiResponse(ScoreResponse response) {
+        if (response == null) {
+            throw new IllegalStateException("AI provider returned no scoring result");
+        }
+
+        response.setKeywordScore(normalizeScore(response.getKeywordScore()));
+        response.setSectionScore(normalizeScore(response.getSectionScore()));
+        response.setExperienceScore(normalizeScore(response.getExperienceScore()));
+        response.setFormatScore(normalizeScore(response.getFormatScore()));
+
+        double overallScore = (response.getKeywordScore() * keywordWeight)
+                + (response.getSectionScore() * sectionWeight)
+                + (response.getExperienceScore() * experienceWeight)
+                + (response.getFormatScore() * formatWeight);
+        overallScore = Math.round(overallScore * 100.0) / 100.0;
+        response.setOverallScore(normalizeScore(overallScore));
+        response.setGrade(calculateGrade(response.getOverallScore()));
+        response.setMatchedKeywords(response.getMatchedKeywords() == null ? List.of() : response.getMatchedKeywords());
+        response.setMissingKeywords(response.getMissingKeywords() == null ? List.of() : response.getMissingKeywords());
+        response.setSuggestions(response.getSuggestions() == null ? List.of() : response.getSuggestions());
+        response.setAnalysisMethod("AI");
+
+        String summary = response.getAnalysisSummary();
+        if (summary == null || summary.isBlank()) {
+            summary = "The AI compared resume evidence with the job requirements. Review the listed gaps and suggestions against your actual experience.";
+        }
+        response.setAnalysisSummary(summary.length() > 600 ? summary.substring(0, 600) : summary);
+        return response;
+    }
+
+    private double normalizeScore(double score) {
+        if (!Double.isFinite(score)) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(100.0, score));
     }
 
     private List<String> extractKeywords(String text) {
