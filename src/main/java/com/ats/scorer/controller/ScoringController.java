@@ -1,11 +1,8 @@
 package com.ats.scorer.controller;
 
-import com.ats.scorer.dto.ScoreRequest;
 import com.ats.scorer.dto.ScoreResponse;
-import com.ats.scorer.dto.TailoredResumeResponse;
 import com.ats.scorer.service.AtsScoringService;
 import com.ats.scorer.service.ResumeParserService;
-import com.ats.scorer.service.ResumeTailoringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +20,10 @@ public class ScoringController {
 
     private final AtsScoringService atsScoringService;
     private final ResumeParserService resumeParserService;
-    private final ResumeTailoringService resumeTailoringService;
 
-    public ScoringController(AtsScoringService atsScoringService, ResumeParserService resumeParserService, ResumeTailoringService resumeTailoringService) {
+    public ScoringController(AtsScoringService atsScoringService, ResumeParserService resumeParserService) {
         this.atsScoringService = atsScoringService;
         this.resumeParserService = resumeParserService;
-        this.resumeTailoringService = resumeTailoringService;
     }
 
     @PostMapping("/score")
@@ -78,52 +73,6 @@ public class ScoringController {
         }
     }
 
-    @PostMapping("/tailor")
-    public ResponseEntity<?> tailorResume(
-            @RequestParam("resume") MultipartFile resume,
-            @RequestParam("jobDescription") String jobDescription) {
-
-        // Validate inputs
-        if (resume == null || resume.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Please upload a resume file",
-                    "supportedFormats", "PDF, DOCX, TXT"
-            ));
-        }
-
-        if (jobDescription == null || jobDescription.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Please provide a job description"
-            ));
-        }
-
-        try {
-            // Extract text from resume
-            String resumeText = resumeParserService.extractText(resume);
-
-            if (resumeText == null || resumeText.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Could not extract text from the uploaded resume. Please try a different file."
-                ));
-            }
-
-            // Tailor the resume based on the job description
-            TailoredResumeResponse tailoredResponse = resumeTailoringService.tailorResume(resumeText, jobDescription);
-
-            return ResponseEntity.ok(tailoredResponse);
-
-        } catch (IOException e) {
-            logger.warn("Resume parsing failed during tailoring (fileSizeBytes={})", resume.getSize(), e);
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Failed to process the uploaded file. Please verify the file and try again."
-            ));
-        } catch (Exception e) {
-            logger.error("Resume tailoring failed (fileSizeBytes={})", resume.getSize(), e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "error", "An unexpected error occurred. Please try again later."
-            ));
-        }
-    }
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
