@@ -794,7 +794,7 @@
                         <span class="eyebrow">Your report</span>
                         <h2 id="resultsTitle">Resume match overview</h2>
                     </div>
-                    <span class="report-badge">Job description comparison</span>
+                    <span class="report-badge" id="analysisMode">Job description comparison</span>
                 </div>
 
                 <div class="score-overview">
@@ -805,7 +805,7 @@
                     <div>
                         <h3 id="scoreHeadline">Your report is ready</h3>
                         <p id="scoreSummary">Review the breakdown below to see where your resume aligns with the role.</p>
-                        <p class="score-note">This is a text-based comparison, not a hiring prediction. Review suggestions and only add skills that reflect your experience.</p>
+                        <p class="score-note">This is not a hiring prediction. AI mode sends resume and job-description text to the configured AI provider; review all suggestions and only add skills that reflect your experience.</p>
                     </div>
                 </div>
 
@@ -1015,7 +1015,10 @@
                 : overallScore >= 60 ? 'A promising match with room to improve'
                 : 'Some important areas may need attention';
             document.getElementById('scoreSummary').textContent =
-                `Your resume received ${overallScore}% (grade ${data.grade || '—'}). Use the breakdown to focus on the areas that can be improved honestly.`;
+                data.analysisSummary || `Your resume received ${overallScore}% (grade ${data.grade || '—'}). Use the breakdown to focus on the areas that can be improved honestly.`;
+            document.getElementById('analysisMode').textContent = data.analysisMethod === 'AI'
+                ? 'AI analysis'
+                : 'Rule-based analysis';
 
             renderKeywordTags('matchedKeywords', 'matchedCount', data.matchedKeywords, 'keyword-matched', 'No matching keywords found.');
             renderKeywordTags('missingKeywords', 'missingCount', data.missingKeywords, 'keyword-missing', 'No potential keyword gaps found.');

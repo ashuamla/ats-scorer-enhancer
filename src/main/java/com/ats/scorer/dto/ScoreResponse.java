@@ -13,6 +13,8 @@ public class ScoreResponse {
     private List<String> missingKeywords;
     private List<String> suggestions;
     private String grade;
+    private String analysisMethod;
+    private String analysisSummary;
 
     public double getOverallScore() {
         return overallScore;
@@ -84,5 +86,21 @@ public class ScoreResponse {
 
     public void setGrade(String grade) {
         this.grade = grade;
+    }
+
+    public String getAnalysisMethod() {
+        return analysisMethod;
+    }
+
+    public void setAnalysisMethod(String analysisMethod) {
+        this.analysisMethod = analysisMethod;
+    }
+
+    public String getAnalysisSummary() {
+        return analysisSummary;
+    }
+
+    public void setAnalysisSummary(String analysisSummary) {
+        this.analysisSummary = analysisSummary;
     }
 }

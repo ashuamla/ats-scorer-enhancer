@@ -61,6 +61,8 @@ class ScoringControllerTest {
             scoreResponse.setMissingKeywords(List.of("docker"));
             scoreResponse.setSuggestions(List.of("Add more role-specific details."));
             scoreResponse.setGrade("A");
+            scoreResponse.setAnalysisMethod("AI");
+            scoreResponse.setAnalysisSummary("Strong evidence of relevant experience.");
 
             when(resumeParserService.extractText(any())).thenReturn(SAMPLE_RESUME);
             when(atsScoringService.score(SAMPLE_RESUME, SAMPLE_JOB_DESCRIPTION)).thenReturn(scoreResponse);
@@ -74,6 +76,8 @@ class ScoringControllerTest {
                     .andExpect(jsonPath("$.matchedKeywords[0]").value("java"))
                     .andExpect(jsonPath("$.missingKeywords[0]").value("docker"))
                     .andExpect(jsonPath("$.suggestions[0]").value("Add more role-specific details."))
+                    .andExpect(jsonPath("$.analysisMethod").value("AI"))
+                    .andExpect(jsonPath("$.analysisSummary").value("Strong evidence of relevant experience."))
                     .andExpect(jsonPath("$.grade").value("A"));
         }
 
